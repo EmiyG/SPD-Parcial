@@ -33,9 +33,9 @@ void setup()
   pinMode(btnReinicio, INPUT_PULLUP);
   pinMode(A4, OUTPUT);
   pinMode(A5, OUTPUT);
-  pinMode(motorPin, OUTPUT);
-  pinMode(tempSensorPin, INPUT);
-  pinMode(fotodiodoPin, INPUT); 
+  pinMode(motorPin, OUTPUT); // Agregamos el pin del motor
+  pinMode(tempSensorPin, INPUT); // Agregamos el pin del sensor de temperatura
+  pinMode(fotodiodoPin, INPUT);
   Serial.begin(9600);
 }
 
@@ -107,12 +107,20 @@ void ajustarVelocidadMotor(int sensorValue)
   int velocidad = map(sensorValue, 0, 1023, 0, 255);
   analogWrite(motorPin, velocidad);
 }
-
 void manejarDisplay(int contadorNumeros)
 {
+  /* Funcion para lograr el funcionamiento del multiplexado
+  Los displays están en un sistema de multiplexado
+  Controlamos con esta función qué display se enciende en qué momento
+  de esta manera y con ayuda del delay logramos el efecto de que están 
+  encendidos ambos displays cuando en realidad se encienden y se apagan */
+
+  /* Esta función sirve para manejar los números y el encendido y apagado de 
+  displays, al contador lo dividimos por 10 para poder sacar los dígitos */
   numerosDisplay(contadorNumeros / 10);
   prenderDisplay(1, 0);
   delay(50);
+  // sacamos las decenas para mostrar en el primer display
   numerosDisplay(contadorNumeros - 10 * (contadorNumeros / 10));
   prenderDisplay(0, 1);
   delay(50);
@@ -120,6 +128,9 @@ void manejarDisplay(int contadorNumeros)
 
 void numerosDisplay(int numero)
 {
+  // Esta función sirve para mostrar los números correspondientes
+  // y llamamos a la función borrarDisplay para el apagado de los dígitos
+  borrarDisplay();
 
   switch (numero)
   {
@@ -209,16 +220,21 @@ void borrarDisplay()
 
 void prenderDisplay(int display1, int display2)
 {
+  // Función que maneja el encendido de los display
+  // para indicar qué display prender.
   digitalWrite(A5, display1);
   digitalWrite(A4, display2);
 }
 
 int teclaPresionada(void)
 {
+  // Función para recrear el antirrebote
+  // primero obtenemos los pulsadores
   leerReiniciar = digitalRead(btnReinicio);
   leerSumar = digitalRead(btnSumar);
   leerRestar = digitalRead(btnRestar);
 
+  // Si no están pulsados se inicializan en 1 y nos quedamos con ese estado
   if (leerSumar == 1)
   {
     sumarAnterior = 1;
@@ -233,6 +249,9 @@ int teclaPresionada(void)
     reiniciarAnterior = 1;
   }
 
+  // preguntamos si fue pulsado y si el estado anterior es distinto
+  // entonces modificamos y devolvemos el pulsador
+  // de esta manera logramos el efecto antirrebote
   if (leerSumar == 0 && leerSumar != sumarAnterior)
   {
     sumarAnterior = leerSumar;
@@ -250,12 +269,15 @@ int teclaPresionada(void)
     reiniciarAnterior = leerReiniciar;
     return btnReinicio;
   }
+  // si no pasa nada de lo anterior se devuelve 0
   return 0;
 }
 
+// Función para mostrar los números primos del 0 al 99
 void mostrarNumerosPrimos()
 {
   mostrarPrimos = true;
+  apagarMotor(); // Apagar el motor al iniciar la visualización de primos
   for (int i = ultimoPrimo + 1; i <= 99; ++i)
   {
     if (esPrimo(i))
@@ -264,15 +286,32 @@ void mostrarNumerosPrimos()
       manejarDisplay(contadorNumeros);
       ultimoPrimo = i;
       delay(777);
+
+      // Verificar si se presionó el botón de reinicio para detener la visualización de primos
       if (!mostrarPrimos || teclaPresionada() == btnReinicio)
       {
         mostrarPrimos = false;
+        apagarMotor(); // Apagar el motor al salir de la visualización de primos
         return;
       }
     }
   }
+  apagarMotor(); // Apagar el motor al finalizar la visualización de primos
 }
 
+void apagarLeds()
+{
+  // Función para apagar todos los LEDs 7 segmentos
+  digitalWrite(A, 0);
+  digitalWrite(B, 0);
+  digitalWrite(C, 0);
+  digitalWrite(D, 0);
+  digitalWrite(E, 0);
+  digitalWrite(F, 0);
+  digitalWrite(G, 0);
+}
+
+// Función para verificar si un número es primo
 bool esPrimo(int num)
 {
   if (num <= 1)
@@ -283,4 +322,9 @@ bool esPrimo(int num)
       return false;
   }
   return true;
+}
+void apagarMotor()
+{
+  
+  analogWrite(motorPin, 0);
 }
