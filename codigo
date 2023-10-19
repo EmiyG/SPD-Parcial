@@ -1,0 +1,286 @@
+// C++ code
+// DEFINO PINES de los display y los Btns
+#define A 12
+#define B 13
+#define C 7
+#define D 8
+#define E 9
+#define F 11
+#define G 10
+#define btnSumar 4
+#define btnRestar 3
+#define btnReinicio 2
+#define switchPin 5
+#define fotodiodoPin A1
+
+int motorPin = 6;
+int tempSensorPin = A0;
+bool mostrarPrimos = false;
+int ultimoPrimo = 0;
+
+void setup()
+{
+  // Pines de salida
+  pinMode(A, OUTPUT);
+  pinMode(B, OUTPUT);
+  pinMode(C, OUTPUT);
+  pinMode(D, OUTPUT);
+  pinMode(E, OUTPUT);
+  pinMode(F, OUTPUT);
+  pinMode(G, OUTPUT);
+  pinMode(btnSumar, INPUT_PULLUP);
+  pinMode(btnRestar, INPUT_PULLUP);
+  pinMode(btnReinicio, INPUT_PULLUP);
+  pinMode(A4, OUTPUT);
+  pinMode(A5, OUTPUT);
+  pinMode(motorPin, OUTPUT);
+  pinMode(tempSensorPin, INPUT);
+  pinMode(fotodiodoPin, INPUT); 
+  Serial.begin(9600);
+}
+
+int contadorNumeros = 0;
+int leerReiniciar = 0;
+int leerSumar = 0;
+int leerRestar = 0;
+int restarAnterior = 1;
+int sumarAnterior = 1;
+int reiniciarAnterior = 1;
+bool switchEstadoAnterior = HIGH;
+
+void loop()
+{
+  int switchEstado = digitalRead(switchPin);
+
+  if (switchEstado != switchEstadoAnterior)
+  {
+    switchEstadoAnterior = switchEstado;
+
+    if (switchEstado == LOW)
+    {
+      mostrarNumerosPrimos();
+      return;
+    }
+  }
+
+  int valorFotodiodo = analogRead(fotodiodoPin);
+  Serial.println(valorFotodiodo); // Agrega esta línea para imprimir el valor del fotodiodo
+
+  if (valorFotodiodo > 80) // Ajusta este umbral según sea necesario
+  {
+    borrarDisplay();
+  }
+  else
+  {
+    int presionoTecla = teclaPresionada();
+
+    if (presionoTecla == btnSumar)
+    {
+      contadorNumeros++;
+      if (contadorNumeros > 99)
+      {
+        contadorNumeros = 0;
+      }
+    }
+    else if (presionoTecla == btnRestar)
+    {
+      contadorNumeros--;
+      if (contadorNumeros < 0)
+      {
+        contadorNumeros = 99;
+      }
+    }
+    else if (presionoTecla == btnReinicio)
+    {
+      contadorNumeros = 0;
+      mostrarPrimos = false;
+    }
+
+    manejarDisplay(contadorNumeros);
+  }
+
+  ajustarVelocidadMotor(analogRead(tempSensorPin));
+}
+
+void ajustarVelocidadMotor(int sensorValue)
+{
+  int velocidad = map(sensorValue, 0, 1023, 0, 255);
+  analogWrite(motorPin, velocidad);
+}
+
+void manejarDisplay(int contadorNumeros)
+{
+  numerosDisplay(contadorNumeros / 10);
+  prenderDisplay(1, 0);
+  delay(50);
+  numerosDisplay(contadorNumeros - 10 * (contadorNumeros / 10));
+  prenderDisplay(0, 1);
+  delay(50);
+}
+
+void numerosDisplay(int numero)
+{
+
+  switch (numero)
+  {
+  case 0:
+    digitalWrite(A, 1);
+    digitalWrite(B, 1);
+    digitalWrite(C, 1);
+    digitalWrite(D, 1);
+    digitalWrite(E, 1);
+    digitalWrite(F, 1);
+    break;
+  case 1:
+    digitalWrite(B, 1);
+    digitalWrite(C, 1);
+    break;
+  case 2:
+    digitalWrite(A, 1);
+    digitalWrite(B, 1);
+    digitalWrite(G, 1);
+    digitalWrite(E, 1);
+    digitalWrite(D, 1);
+    break;
+  case 3:
+    digitalWrite(A, 1);
+    digitalWrite(B, 1);
+    digitalWrite(G, 1);
+    digitalWrite(C, 1);
+    digitalWrite(D, 1);
+    break;
+  case 4:
+    digitalWrite(F, 1);
+    digitalWrite(B, 1);
+    digitalWrite(G, 1);
+    digitalWrite(C, 1);
+    break;
+  case 5:
+    digitalWrite(A, 1);
+    digitalWrite(F, 1);
+    digitalWrite(G, 1);
+    digitalWrite(C, 1);
+    digitalWrite(D, 1);
+    break;
+  case 6:
+    digitalWrite(A, 1);
+    digitalWrite(F, 1);
+    digitalWrite(G, 1);
+    digitalWrite(C, 1);
+    digitalWrite(E, 1);
+    digitalWrite(D, 1);
+    break;
+  case 7:
+    digitalWrite(A, 1);
+    digitalWrite(B, 1);
+    digitalWrite(C, 1);
+    break;
+  case 8:
+    digitalWrite(A, 1);
+    digitalWrite(B, 1);
+    digitalWrite(C, 1);
+    digitalWrite(D, 1);
+    digitalWrite(E, 1);
+    digitalWrite(F, 1);
+    digitalWrite(G, 1);
+    break;
+  case 9:
+    digitalWrite(A, 1);
+    digitalWrite(B, 1);
+    digitalWrite(C, 1);
+    digitalWrite(F, 1);
+    digitalWrite(G, 1);
+    break;
+  default:
+    break;
+  }
+}
+
+void borrarDisplay()
+{
+  digitalWrite(A, 0);
+  digitalWrite(B, 0);
+  digitalWrite(C, 0);
+  digitalWrite(D, 0);
+  digitalWrite(E, 0);
+  digitalWrite(F, 0);
+  digitalWrite(G, 0);
+}
+
+void prenderDisplay(int display1, int display2)
+{
+  digitalWrite(A5, display1);
+  digitalWrite(A4, display2);
+}
+
+int teclaPresionada(void)
+{
+  leerReiniciar = digitalRead(btnReinicio);
+  leerSumar = digitalRead(btnSumar);
+  leerRestar = digitalRead(btnRestar);
+
+  if (leerSumar == 1)
+  {
+    sumarAnterior = 1;
+  }
+
+  if (leerRestar == 1)
+  {
+    restarAnterior = 1;
+  }
+  if (leerReiniciar == 1)
+  {
+    reiniciarAnterior = 1;
+  }
+
+  if (leerSumar == 0 && leerSumar != sumarAnterior)
+  {
+    sumarAnterior = leerSumar;
+    return btnSumar;
+  }
+
+  if (leerRestar == 0 && leerRestar != restarAnterior)
+  {
+    restarAnterior = leerRestar;
+    return btnRestar;
+  }
+
+  if (leerReiniciar == 0 && leerReiniciar != reiniciarAnterior)
+  {
+    reiniciarAnterior = leerReiniciar;
+    return btnReinicio;
+  }
+  return 0;
+}
+
+void mostrarNumerosPrimos()
+{
+  mostrarPrimos = true;
+  for (int i = ultimoPrimo + 1; i <= 99; ++i)
+  {
+    if (esPrimo(i))
+    {
+      contadorNumeros = i;
+      manejarDisplay(contadorNumeros);
+      ultimoPrimo = i;
+      delay(777);
+      if (!mostrarPrimos || teclaPresionada() == btnReinicio)
+      {
+        mostrarPrimos = false;
+        return;
+      }
+    }
+  }
+}
+
+bool esPrimo(int num)
+{
+  if (num <= 1)
+    return false;
+  for (int i = 2; i <= num / 2; ++i)
+  {
+    if (num % i == 0)
+      return false;
+  }
+  return true;
+}
